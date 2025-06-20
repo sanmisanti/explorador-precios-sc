@@ -1,0 +1,272 @@
+.results {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.resultsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.resultsHeader h2 {
+  color: #4a5568;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.recordCount {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.tableContainer {
+  overflow-x: auto;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  min-width: 1400px;
+  font-size: 0.9rem;
+}
+
+.table th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.table td {
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+  line-height: 1.4;
+}
+
+.tableRow:hover {
+  background-color: #f7fafc;
+}
+
+.tableRow:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.tableRow:nth-child(even):hover {
+  background-color: #e8f4f8;
+}
+
+/* Estilos específicos de columnas */
+.descripcion {
+  max-width: 200px;
+  font-weight: 500;
+  color: #2d3748;
+}
+
+.especificaciones,
+.observaciones {
+  max-width: 150px;
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+.precio {
+  text-align: right;
+  font-weight: 600;
+  color: #2d3748;
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.numero {
+  text-align: center;
+  font-weight: 500;
+  color: #4a5568;
+  min-width: 80px;
+}
+
+.positivo {
+  color: #38a169 !important;
+}
+
+.negativo {
+  color: #e53e3e !important;
+}
+
+.mercadoLibre {
+  min-width: 320px;
+  max-width: 320px;
+}
+
+/* Sin resultados */
+.noResults {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: fadeIn 0.5s ease-out;
+}
+
+.noResultsIcon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.noResults h3 {
+  color: #4a5568;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.noResults p {
+  color: #718096;
+  font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .results {
+    padding: 1.5rem;
+    border-radius: 15px;
+  }
+  
+  .resultsHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .resultsHeader h2 {
+    font-size: 1.75rem;
+    text-align: center;
+  }
+  
+  .recordCount {
+    text-align: center;
+    align-self: center;
+  }
+  
+  .table {
+    min-width: 1200px;
+    font-size: 0.8rem;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .table th {
+    font-size: 0.75rem;
+  }
+  
+  .descripcion {
+    max-width: 150px;
+  }
+  
+  .especificaciones,
+  .observaciones {
+    max-width: 120px;
+    font-size: 0.75rem;
+  }
+  
+  .precio {
+    min-width: 100px;
+  }
+  
+  .numero {
+    min-width: 60px;
+  }
+  
+  .mercadoLibre {
+    min-width: 280px;
+    max-width: 280px;
+  }
+  
+  .noResults {
+    padding: 3rem 1.5rem;
+  }
+  
+  .noResultsIcon {
+    font-size: 3rem;
+  }
+  
+  .noResults h3 {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .results {
+    padding: 1rem;
+  }
+  
+  .table {
+    min-width: 1000px;
+    font-size: 0.75rem;
+  }
+  
+  .table th,
+  .table td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .descripcion {
+    max-width: 120px;
+  }
+  
+  .especificaciones,
+  .observaciones {
+    max-width: 100px;
+  }
+  
+  .mercadoLibre {
+    min-width: 240px;
+    max-width: 240px;
+  }
+  
+  .noResults {
+    padding: 2rem 1rem;
+  }
+  
+  .noResultsIcon {
+    font-size: 2.5rem;
+  }
+  
+  .noResults h3 {
+    font-size: 1.1rem;
+  }
+  
+  .noResults p {
+    font-size: 0.9rem;
+  }
+} 
