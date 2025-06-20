@@ -10,7 +10,7 @@
 
 ## 🎯 Opciones de Despliegue (Ordenadas por Facilidad)
 
-### 🟢 OPCIÓN 1: Vercel + PlanetScale (RECOMENDADA - GRATIS)
+### 🟢 OPCIÓN 1: Vercel + Supabase (RECOMENDADA - GRATIS)
 **Tiempo estimado:** 2-3 horas  
 **Costo:** $0/mes  
 **Dificultad:** ⭐⭐☆☆☆
@@ -22,11 +22,12 @@
 - ✅ **CDN global**
 - ✅ **Serverless functions** para APIs
 
-#### Base de Datos (PlanetScale):
-- ✅ **MySQL compatible** (no SQL Server)
-- ✅ **5GB gratis**
-- ✅ **Branching** para desarrollo
-- ✅ **Escalable**
+#### Base de Datos (Supabase):
+- ✅ **PostgreSQL gratis** (500MB)
+- ✅ **API automática**
+- ✅ **Real-time subscriptions**
+- ✅ **Authentication incluida**
+- ✅ **Dashboard amigable**
 
 ---
 
@@ -61,7 +62,19 @@
 
 ---
 
-### 🔴 OPCIÓN 4: DigitalOcean Droplet (MÁS CONTROL)
+### 🟠 OPCIÓN 4: Vercel + PlanetScale (YA NO GRATIS)
+**Tiempo estimado:** 2-3 horas  
+**Costo:** $29/mes (PlanetScale)  
+**Dificultad:** ⭐⭐☆☆☆
+
+#### Nota:
+- ❌ **PlanetScale eliminó su plan gratuito**
+- 💰 **Costo mínimo:** $29/mes
+- ✅ **Sigue siendo una excelente opción** si tienes presupuesto
+
+---
+
+### 🔴 OPCIÓN 5: DigitalOcean Droplet (MÁS CONTROL)
 **Tiempo estimado:** 4-6 horas  
 **Costo:** $6/mes  
 **Dificultad:** ⭐⭐⭐⭐☆
@@ -105,11 +118,18 @@ FROM pli.PliegoLinea pl
 
 ---
 
-## 🛠️ IMPLEMENTACIÓN DETALLADA - OPCIÓN 1 (Vercel + PlanetScale)
+## 🛠️ IMPLEMENTACIÓN DETALLADA - OPCIÓN 1 (Vercel + Supabase)
 
 ### PARTE A: Preparar el Repositorio
 
-#### 1. Crear Repositorio en GitHub
+#### 1. Instalar Dependencias de Supabase
+```bash
+npm install @supabase/supabase-js
+# o
+yarn add @supabase/supabase-js
+```
+
+#### 2. Crear Repositorio en GitHub
 ```bash
 # Si no tienes git inicializado
 git init
@@ -120,79 +140,105 @@ git remote add origin https://github.com/TU_USUARIO/explorador-precios.git
 git push -u origin main
 ```
 
-#### 2. Modificar Variables de Entorno
+#### 3. Modificar Variables de Entorno
 Crear archivo `.env.local`:
 ```env
 # Base de datos
-DATABASE_URL="mysql://usuario:password@host/database"
+DATABASE_URL="postgresql://usuario:password@host:5432/database"
+NEXT_PUBLIC_SUPABASE_URL="https://tu-proyecto.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="tu-anon-key"
 
 # Para producción
 NEXT_PUBLIC_APP_URL="https://tu-app.vercel.app"
 ```
 
-### PARTE B: Configurar PlanetScale
+### PARTE B: Configurar Supabase
 
 #### 1. Crear Cuenta y Base de Datos
-- Ir a [planetscale.com](https://planetscale.com)
+- Ir a [supabase.com](https://supabase.com)
 - Crear cuenta gratuita
-- Crear nueva base de datos: `explorador-precios`
-- Obtener connection string
+- Crear nuevo proyecto: `explorador-precios`
+- Obtener URL y claves del dashboard
 
 #### 2. Migrar Esquema y Datos
+Usar el editor SQL de Supabase:
 ```sql
--- Crear tablas equivalentes
+-- Crear tablas equivalentes (PostgreSQL)
 CREATE TABLE clasificaciones (
-    id INT PRIMARY KEY,
+    id INTEGER PRIMARY KEY,
     descripcion VARCHAR(500),
-    cantidad INT
+    cantidad INTEGER
 );
 
 CREATE TABLE pliego_data (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    clasificacion_id INT,
+    id SERIAL PRIMARY KEY,
+    clasificacion_id INTEGER,
     descripcion VARCHAR(1000),
     especificaciones TEXT,
     observaciones TEXT,
-    precio_unitario DECIMAL(10,2),
-    numero_linea INT,
+    precio_unitario NUMERIC(10,2),
+    numero_linea INTEGER,
     numero_pliego VARCHAR(100),
     FOREIGN KEY (clasificacion_id) REFERENCES clasificaciones(id)
 );
 ```
 
-#### 3. Actualizar Código para MySQL
+#### 3. Actualizar Código para PostgreSQL
 Archivo `lib/database.js`:
 ```javascript
-import mysql from 'mysql2/promise';
+import { createClient } from '@supabase/supabase-js';
 
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    ssl: { rejectUnauthorized: false }
-});
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function getDatabase() {
-    return pool;
+    return supabase;
 }
 
 export async function consultarPrecios(codigo) {
-    const connection = await pool;
-    const [rows] = await connection.execute(`
-        SELECT 
-            pd.descripcion,
-            pd.especificaciones as EspecificacionesTecnicas,
-            pd.observaciones as Observaciones,
-            pd.precio_unitario as PrecioUnitario,
-            pd.numero_linea as NumeroLinea,
-            pd.numero_pliego as NumeroPliego
-        FROM pliego_data pd
-        WHERE pd.clasificacion_id = ?
-        LIMIT 10
-    `, [codigo]);
+    const { data, error } = await supabase
+        .from('pliego_data')
+        .select(`
+            descripcion,
+            especificaciones,
+            observaciones,
+            precio_unitario,
+            numero_linea,
+            numero_pliego
+        `)
+        .eq('clasificacion_id', codigo)
+        .limit(10);
     
-    return rows;
+    if (error) throw error;
+    
+    // Mapear para mantener compatibilidad con el código existente
+    return data.map(row => ({
+        Descripcion: row.descripcion,
+        EspecificacionesTecnicas: row.especificaciones,
+        Observaciones: row.observaciones,
+        PrecioUnitario: row.precio_unitario,
+        NumeroLinea: row.numero_linea,
+        NumeroPliego: row.numero_pliego
+         }));
+}
+
+// Función para obtener clasificaciones (actualizar también)
+export async function obtenerClasificaciones() {
+    const { data, error } = await supabase
+        .from('clasificaciones')
+        .select('id, descripcion, cantidad')
+        .order('cantidad', { ascending: false });
+    
+    if (error) throw error;
+    
+    // Mapear para mantener compatibilidad
+    return data.map(row => ({
+        IdClasificacion: row.id,
+        Descripcion: row.descripcion,
+        Cantidad: row.cantidad
+    }));
 }
 ```
 
@@ -206,10 +252,9 @@ export async function consultarPrecios(codigo) {
 #### 2. Configurar Variables de Entorno en Vercel
 En el dashboard de Vercel:
 ```
-DB_HOST=tu-host.planetscale.app
-DB_USER=tu-usuario
-DB_PASSWORD=tu-password
-DB_NAME=explorador-precios
+DATABASE_URL=postgresql://tu-usuario:password@db.host.supabase.co:5432/postgres
+NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-clave-anonima
 ```
 
 #### 3. Deploy Automático
@@ -221,19 +266,21 @@ DB_NAME=explorador-precios
 
 ## 📦 Scripts de Migración
 
-### Script para Convertir Datos SQL Server → MySQL
+### Script para Convertir Datos SQL Server → PostgreSQL (Supabase)
 ```javascript
 // scripts/migrate-data.js
 const fs = require('fs');
 const sql = require('mssql');
-const mysql = require('mysql2/promise');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY // Clave de servicio, no la anónima
+);
 
 async function migrateData() {
     // Conectar a SQL Server
     const sqlPool = await sql.connect(configSQLServer);
-    
-    // Conectar a MySQL
-    const mysqlConnection = await mysql.createConnection(configMySQL);
     
     // Migrar clasificaciones
     const clasificaciones = await sqlPool.request().query(`
@@ -244,14 +291,22 @@ async function migrateData() {
         GROUP BY c.Descripcion, pl.IdClasificacion
     `);
     
-    for (const row of clasificaciones.recordset) {
-        await mysqlConnection.execute(
-            'INSERT INTO clasificaciones (id, descripcion, cantidad) VALUES (?, ?, ?)',
-            [row.IdClasificacion, row.Descripcion, row.Cantidad]
+    // Insertar en Supabase
+    const { data, error } = await supabase
+        .from('clasificaciones')
+        .insert(
+            clasificaciones.recordset.map(row => ({
+                id: row.IdClasificacion,
+                descripcion: row.Descripcion,
+                cantidad: row.Cantidad
+            }))
         );
-    }
     
-    console.log('✅ Migración completada');
+    if (error) {
+        console.error('❌ Error en migración:', error);
+    } else {
+        console.log('✅ Migración completada');
+    }
 }
 
 migrateData();
@@ -306,9 +361,10 @@ export function handleAPIError(error, res) {
 
 | Plataforma | Costo Inicial | Costo Mensual | Límites |
 |------------|---------------|---------------|---------|
-| **Vercel + PlanetScale** | $0 | $0 | 100GB bandwidth, 5GB DB |
-| **Netlify + Supabase** | $0 | $0 | 100GB bandwidth, 2GB DB |
+| **Vercel + Supabase** | $0 | $0 | 100GB bandwidth, 500MB DB |
+| **Netlify + Supabase** | $0 | $0 | 100GB bandwidth, 500MB DB |
 | **Railway** | $0 | $5 | 500GB bandwidth, 1GB RAM |
+| **Vercel + PlanetScale** | $0 | $29 | 100GB bandwidth, 5GB DB |
 | **DigitalOcean** | $0 | $6 | 1GB RAM, 25GB SSD, 1TB transfer |
 
 ---
@@ -348,9 +404,10 @@ export function handleAPIError(error, res) {
 - [DigitalOcean](https://digitalocean.com) - VPS
 
 ### Bases de Datos
-- [PlanetScale](https://planetscale.com) - MySQL
-- [Supabase](https://supabase.com) - PostgreSQL
-- [MongoDB Atlas](https://mongodb.com/atlas) - NoSQL
+- [Supabase](https://supabase.com) - PostgreSQL (GRATIS ✅)
+- [PlanetScale](https://planetscale.com) - MySQL ($29/mes ❌)
+- [MongoDB Atlas](https://mongodb.com/atlas) - NoSQL (Gratis limitado)
+- [Neon](https://neon.tech) - PostgreSQL (Gratis alternativo)
 
 ### Herramientas
 - [GitHub](https://github.com) - Control de versiones
@@ -360,14 +417,20 @@ export function handleAPIError(error, res) {
 
 ## 🎯 Recomendación Final
 
-**Para tu caso específico, recomiendo la OPCIÓN 1 (Vercel + PlanetScale) porque:**
+**Para tu caso específico, recomiendo la OPCIÓN 1 (Vercel + Supabase) porque:**
 
 ✅ **Gratis:** Sin costos iniciales ni mensuales  
 ✅ **Fácil:** Deploy automático desde GitHub  
-✅ **Escalable:** Puede crecer con tu proyecto  
+✅ **PostgreSQL:** Base de datos más potente que MySQL  
+✅ **Dashboard:** Interfaz gráfica para administrar datos  
+✅ **API automática:** Genera REST y GraphQL automáticamente  
+✅ **Real-time:** Funcionalidades en tiempo real incluidas  
 ✅ **Confiable:** Plataformas usadas por miles de apps  
 ✅ **Mantenimiento:** Casi cero mantenimiento requerido  
 
 **Tiempo total estimado:** 2-3 horas para tener todo funcionando online.
+
+### 🚨 Nota sobre PlanetScale:
+PlanetScale eliminó su plan gratuito en abril 2024. Ahora cuesta $29/mes mínimo, por lo que **Supabase es la mejor alternativa gratuita** para PostgreSQL.
 
 ¿Quieres que empecemos con alguna de estas opciones? 

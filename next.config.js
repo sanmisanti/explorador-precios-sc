@@ -52,5 +52,11 @@ const nextConfig = {
     optimizeCss: true,
   },
 };
-
-module.exports = nextConfig; 
+module.exports = {
+    experimental: {
+        optimizeCss: true,
+    },
+    compress: true,
+    poweredByHeader: false,
+    generateEtags: false,
+}
